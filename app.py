@@ -87,9 +87,9 @@ with st.form("add_fmea"):
     with col3:
         S = st.slider("Severity (S)", 1, 10, 5)
     with col4:
-        O = st.slider("Occurrence (O)", 1, 5, 3)
+        O = st.slider("Occurrence (O)", 1, 10, 5)
     with col5:
-        D = st.slider("Detectability (D)", 1, 5, 3)
+        D = st.slider("Detectability (D)", 1, 10, 5)
 
     submit = st.form_submit_button("Add to FMEA Table")
 
@@ -118,12 +118,30 @@ with st.form("add_fmea"):
 # =========================
 # DISPLAY TABLE
 # =========================
+def highlight_rpn(val):
+    if val >= 201:
+        return "background-color: #f8d7da; color: #721c24;"  # red (critical)
+    elif val >= 101:
+        return "background-color: #ffe5b4; color: #7a4a00;"  # orange (high)
+    elif val >= 51:
+        return "background-color: #fff3cd; color: #856404;"  # yellow (moderate)
+    else:
+        return "background-color: #d4edda; color: #155724;"  # green (low)
+        
 st.header("FMEA Risk Table")
 
-st.dataframe(
-    st.session_state.fmea_df,
-    use_container_width=True
-)
+if not st.session_state.fmea_df.empty:
+    styled_df = st.session_state.fmea_df.style.applymap(
+        highlight_rpn,
+        subset=["RPN"]
+    )
+
+    st.dataframe(
+        styled_df,
+        use_container_width=True
+    )
+else:
+    st.info("No FMEA entries available.")
 
 # =========================
 # DELETE ENTRY
@@ -170,17 +188,32 @@ st.download_button(
 st.header("Risk Interpretation 📊")
 
 if not st.session_state.fmea_df.empty:
-    high = (st.session_state.fmea_df["RPN"] >= 150).sum()
-    medium = (
-        (st.session_state.fmea_df["RPN"] >= 75) &
-        (st.session_state.fmea_df["RPN"] < 150)
+    critical = (st.session_state.fmea_df["RPN"] >= 201).sum()
+    high = (
+        (st.session_state.fmea_df["RPN"] >= 101) &
+        (st.session_state.fmea_df["RPN"] <= 200)
     ).sum()
-    low = (st.session_state.fmea_df["RPN"] < 75).sum()
+    moderate = (
+        (st.session_state.fmea_df["RPN"] >= 51) &
+        (st.session_state.fmea_df["RPN"] <= 100)
+    ).sum()
+    low = (st.session_state.fmea_df["RPN"] <= 50).sum()
 
-    if high > 0:
-        st.error(f"High Risk Detected – {high} High, {medium} Medium, {low} Low")
-    elif medium > 0:
-        st.warning(f"Medium Risk – {medium} Medium, {low} Low")
+    if critical > 0:
+        st.error(
+            f"Critical Risk Detected – "
+            f"{critical} Critical, {high} High, {moderate} Moderate, {low} Low"
+        )
+    elif high > 0:
+        st.warning(
+            f"High Risk Detected – "
+            f"{high} High, {moderate} Moderate, {low} Low"
+        )
+    elif moderate > 0:
+        st.info(
+            f"Moderate Risk – "
+            f"{moderate} Moderate, {low} Low"
+        )
     else:
         st.success(f"Low Risk – {low} Low")
 else:
