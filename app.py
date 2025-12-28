@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from llm_helper_qwen import ask_qwen_about_component
+from llm_helper_qwen import ask_component_RAG
+from rag_fmea import ask_fmea
 
 # =========================
 # PAGE CONFIG
@@ -30,7 +31,7 @@ if "fmea_df" not in st.session_state:
         "Component",
         "Failure Mode",
         "Effect of Failure",
-        "Potential Cause",
+        "Potential Causes",
         "Current Controls",
         "Severity (S)",
         "Occurrence (O)",
@@ -54,7 +55,7 @@ component_ai = st.text_input(
 if st.button("Ask AI (Generate Possible Risks)"):
     if component_ai.strip():
         with st.spinner("Generating possible risks..."):
-            st.session_state.ai_output = ask_qwen_about_component(component_ai)
+            st.session_state.ai_output = ask_component_RAG(component_ai)
     else:
         st.warning("Please enter a component name first.")
 
@@ -80,7 +81,7 @@ with st.form("add_fmea"):
         effect = st.text_input("Effect of Failure")
 
     with col2:
-        cause = st.text_input("Potential Cause")
+        cause = st.text_input("Potential Causes")
         controls = st.text_input("Current Controls")
 
     col3, col4, col5 = st.columns(3)
@@ -95,12 +96,11 @@ with st.form("add_fmea"):
 
     if submit:
         RPN = S * O * D
-
         new_row = {
             "Component": component,
             "Failure Mode": failure_mode,
             "Effect of Failure": effect,
-            "Potential Cause": cause,
+            "Potential Causes": cause,
             "Current Controls": controls,
             "Severity (S)": S,
             "Occurrence (O)": O,
